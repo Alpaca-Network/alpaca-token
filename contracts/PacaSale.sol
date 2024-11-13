@@ -17,6 +17,8 @@ contract PacaSale is Ownable {
     // Price of the Paca
     uint256 public tokenPrice;
 
+    mapping(address => uint256) public salesLockup;
+
     // Address of the treasury
     address public treasury;
     // Events to log changes in the contract state
@@ -74,12 +76,14 @@ contract PacaSale is Ownable {
 
         require(_amount < MAX_BUY_AMOUNT, "PacaSale: Invalid amount for purchase");
         require(_amount * tokenPrice <= msg.value, "PacaSale: Insufficient funds");
-        _safeTransfer(PacaToken, msg.sender, _amount);
-
+        salesLockup[msg.sender] += _amount;
         // Emit an event indicating Paca tokens have been purchased
         emit PurchasePacaToken(_amount);
     }
 
+    function airdrop() external {
+        _safeTransfer(PacaToken, msg.sender, salesLockup[msg.sender]);
+    }
     function widthrawFundsAll() external onlyOwner {
         require(treasury =! address(0), "PacaSale: Invalid address");
 
