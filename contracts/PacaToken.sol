@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 
 
@@ -12,14 +12,16 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  */
 
 
-contract PacaToken is Ownable, SafeERC20 {
+contract PacaToken is Ownable, ERC20 {
 
     // using SafeERC20 for IERC20;
 
     address public treasury;
     bool public taxEnabled = false;
 
-    uint256 public maxFee = 5000; // 50%
+    uint256 public maxFee = 500; // 5%
+
+    uint256 public tradeFee;
 
 
     // store addresses that a automatic market maker pairs
@@ -31,9 +33,8 @@ contract PacaToken is Ownable, SafeERC20 {
 	/***********************************************/
 
   	constructor(
-		uint8 _decimals
-	) ERC20("Alpaca Network", "Paca", _decimals) {
-		_mint(msg.sender, 800000000 * 10 ** _decimals);
+	) ERC20("Alpaca Network", "Paca") {
+		_mint(msg.sender, 800000000 * 10 ** 18);
         
     }
 
@@ -50,19 +51,17 @@ contract PacaToken is Ownable, SafeERC20 {
         address indexed oldWallet
     );
 
-    event SwapAndLiquify(
-        uint256 tokensSwapped,
-        uint256 ethReceived,
-        uint256 tokensIntoLiquidity
+    event TaxEnabled(
+        bool enabled
+    );
+
+    event UpdatedTradeFee(
+        uint256 fee
     );
     /***********************************************/
 	/****************** MODIFIERS ******************/
 	/***********************************************/
 
-    modifier onlyStakingContract() {
-        require(msg.sender == mozStaking, "Invalid caller");
-        _;
-    }
 
 	/*****************************************************************/
 	/******************  EXTERNAL FUNCTIONS  *************************/
@@ -71,6 +70,7 @@ contract PacaToken is Ownable, SafeERC20 {
     // only use to disable tax if absolutely necessary (emergency use only)
     function updateTaxEnabled(bool enabled) external onlyOwner {
         taxEnabled = enabled;
+        emit TaxEnabled(taxEnabled);
     }
 
     function updateFees(
@@ -78,6 +78,8 @@ contract PacaToken is Ownable, SafeERC20 {
     ) external onlyOwner {
         tradeFee = _fee;
         require(tradeFee <= maxFee, "Buy fees must be <= 5%.");
+
+        emit UpdatedTradeFee(tradeFee);
     }
 
     function updateTreasuryWallet(address newTreasury) external onlyOwner {
@@ -124,11 +126,13 @@ contract PacaToken is Ownable, SafeERC20 {
 
     function withdrawStuckToken(address _token, address _to) external onlyOwner {
         require(_to != address(0), "Zero address");
-        uint256 _contractWETHBalance = IERC20(_token).balanceOf(address(this));
-        IERC20(_token).transfer(_to, _contractWETHBalance);
+        uint256 _contractBalance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).transfer(_to, _contractBalance);
     }
 
     function withdrawStuckEth(address toAddr) external onlyOwner {
+        require(toAddr != address(0), "Zero address");
+
         (bool success, ) = toAddr.call{
             value: address(this).balance
         } ("");

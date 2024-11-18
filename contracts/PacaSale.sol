@@ -52,7 +52,7 @@ contract PacaSale is Ownable {
 
     function setTreasury(address _treasury) external onlyOwner {
         // Ensure valid input Max amount
-        require(_treasury =! address(0), "PacaSale: Invalid address");
+        require(_treasury != address(0), "PacaSale: Invalid address");
 
         // Set Value
         treasury = _treasury;
@@ -84,35 +84,20 @@ contract PacaSale is Ownable {
     function airdrop() external {
         _safeTransfer(PacaToken, msg.sender, salesLockup[msg.sender]);
     }
-    function widthrawFundsAll() external onlyOwner {
-        require(treasury =! address(0), "PacaSale: Invalid address");
+    
+    function withdrawStuckToken(address _token, address _to) external onlyOwner {
+        require(_to != address(0), "Zero address");
+        uint256 _contractBalance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).transfer(_to, _contractBalance);
+    }
 
-        _safeTransfer(PacaToken, treasury, IERC20(PacaToken).balanceOf(address(this)));
+    function withdrawStuckEth(address toAddr) external onlyOwner {
+        require(toAddr != address(0), "Zero address");
 
-        (bool success, ) = treasury.call{
+        (bool success, ) = toAddr.call{
             value: address(this).balance
         } ("");
         require(success);
-        // Emit an event indicating Paca and ETH are
-        emit WidthrawFundsAll();
-    }
-
-    function withdrawFundsETH(uint256 _amount) external onlyOwner {
-        require(treasury =! address(0), "PacaSale: Invalid address");
-        // Emit an event indicating Paca tokens have been purchased
-        (bool success, ) = treasury.call{
-            value: address(this).balance
-        } ("");
-        require(success);
-        emit WidthrawFundsETH(_amount);
-    }
-
-    function withdrawFundsPaca(uint256 _amount) external onlyOnwer {
-
-        require(treasury =! address(0), "PacaSale: Invalid address");
-        IERC20(PacaToken).safeTransfer(treasury, _amount);
-        // Emit an event indicating Paca tokens have been purchased
-        emit WidthrawFundsPaca(_amount);
     }
 
    // Internal function to safely transfer tokens, with optional skipping for certain tokens
