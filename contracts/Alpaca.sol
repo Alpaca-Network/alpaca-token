@@ -2,7 +2,6 @@
 // Compatible with OpenZeppelin Contracts ^5.0.0
 pragma solidity ^0.8.22;
 
-// Importing OpenZeppelin libraries for upgradeable and extended ERC20 functionality
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
