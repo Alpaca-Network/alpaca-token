@@ -5,9 +5,6 @@ pragma solidity ^0.8.22;
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
-import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import {ERC20VotesUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {NoncesUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/NoncesUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -17,11 +14,8 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 contract Alpaca is 
     Initializable, 
     ERC20Upgradeable, 
-    ERC20BurnableUpgradeable, 
-    ERC20PausableUpgradeable, 
+    ERC20BurnableUpgradeable,     
     AccessControlUpgradeable, 
-    ERC20PermitUpgradeable, 
-    ERC20VotesUpgradeable, 
     UUPSUpgradeable 
 {
     // Define roles for granular access control
@@ -37,9 +31,6 @@ contract Alpaca is
     uint256 public buyFee;
     uint256 public sellFee;
 
-
-    // Store addresses that a market maker pairs
-
     mapping(address => bool) public lpAddress;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -52,7 +43,7 @@ contract Alpaca is
 	/********************* EVENT *******************/
 	/***********************************************/
 
-    event SetLPAddress(address indexed pair, bool indexed value);
+    event SetLPAddress(address indexed pair, bool value);
 
     event TreasuryWalletUpdated(
         address indexed newWallet,
@@ -80,10 +71,7 @@ contract Alpaca is
         // Initialize inherited modules
         __ERC20_init("Alpaca", "PACA");
         __ERC20Burnable_init();
-        __ERC20Pausable_init();
         __AccessControl_init();
-        __ERC20Permit_init("Alpaca");
-        __ERC20Votes_init();
         __UUPSUpgradeable_init();
 
         // Set up roles for access control
@@ -141,23 +129,6 @@ contract Alpaca is
 
 
     /**
-     * @notice Pause all token transfers
-     * @dev Restricted to accounts with the PAUSER_ROLE
-     */
-    function pause() public onlyRole(PAUSER_ROLE) {
-        _pause();
-    }
-
-    /**
-     * @notice Unpause all token transfers
-     * @dev Restricted to accounts with the PAUSER_ROLE
-     */
-    function unpause() public onlyRole(PAUSER_ROLE) {
-        _unpause();
-    }
-
-
-    /**
      * @notice Authorizes upgrades to the contract
      * @dev Restricted to accounts with the UPGRADER_ROLE
      * @param newImplementation Address of the new implementation contract
@@ -180,7 +151,7 @@ contract Alpaca is
         address from,
         address to,
         uint256 amount
-    ) internal override(ERC20Upgradeable, ERC20PausableUpgradeable, ERC20VotesUpgradeable){
+    ) internal override(ERC20Upgradeable){
 
         uint256 fees = 0;
         // only take fees on buys/sells, do not take on wallet transfers
@@ -203,17 +174,4 @@ contract Alpaca is
         super._update(from, to, amount);
     }
 
-    /**
-     * @notice Returns the nonce for a given address (used for permit functionality)
-     * @param owner Address for which the nonce is queried
-     * @return Current nonce of the owner
-     */
-    function nonces(address owner)
-        public
-        view
-        override(ERC20PermitUpgradeable, NoncesUpgradeable)
-        returns (uint256)
-    {
-        return super.nonces(owner);
-    }
 }
