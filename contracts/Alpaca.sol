@@ -5,8 +5,6 @@ pragma solidity ^0.8.22;
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import {ERC20VotesUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {NoncesUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/NoncesUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -18,8 +16,6 @@ contract Alpaca is
     ERC20Upgradeable, 
     ERC20BurnableUpgradeable,     
     AccessControlUpgradeable, 
-    ERC20PermitUpgradeable, 
-    ERC20VotesUpgradeable, 
     UUPSUpgradeable 
 {
     // Define roles for granular access control
@@ -35,7 +31,7 @@ contract Alpaca is
     uint256 public buyFee;
     uint256 public sellFee;
 
-    address[] public lpAddresses;
+    mapping(address => bool) public lpAddress;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // Constructor disables initializers to ensure proper upgradeable deployment
@@ -47,7 +43,7 @@ contract Alpaca is
 	/********************* EVENT *******************/
 	/***********************************************/
 
-    event SetLPAddress(address indexed pair);
+    event SetLPAddress(address indexed pair, bool value);
 
     event TreasuryWalletUpdated(
         address indexed newWallet,
@@ -76,8 +72,6 @@ contract Alpaca is
         __ERC20_init("Alpaca", "PACA");
         __ERC20Burnable_init();
         __AccessControl_init();
-        __ERC20Permit_init("Alpaca");
-        __ERC20Votes_init();
         __UUPSUpgradeable_init();
 
         // Set up roles for access control
@@ -119,7 +113,7 @@ contract Alpaca is
         emit TreasuryWalletUpdated(newTreasury, treasury);
     }
 
-    function setLPAddress(address pair) 
+    function setLPAddress(address pair, bool value) 
         public 
         onlyRole(TAX_ADMIN_ROLE)
     {
@@ -128,8 +122,8 @@ contract Alpaca is
             "The pair cannot be zero address"
         );
 
-        lpAddresses.push(pair);
-        emit SetLPAddress(pair);
+        lpAddress[pair] = value;
+        emit SetLPAddress(pair, value);
 
     }
 
@@ -157,16 +151,16 @@ contract Alpaca is
         address from,
         address to,
         uint256 amount
-    ) internal override(ERC20Upgradeable, ERC20VotesUpgradeable){
+    ) internal override(ERC20Upgradeable){
 
         uint256 fees = 0;
         // only take fees on buys/sells, do not take on wallet transfers
         if (taxEnabled && amount > 0) {
-            if(contains(from)) {
+            if(lpAddress[from]) {
                 if(buyFee > 0) {
                     fees = (amount * buyFee) / 10000;
                 }
-            } else if(contains(to)) {
+            } else if(lpAddress[to]) {
                 if(sellFee > 0) {
                     fees = (amount * sellFee) / 10000;
                 }
@@ -180,27 +174,4 @@ contract Alpaca is
         super._update(from, to, amount);
     }
 
-    // Function to check if a address exists in the LP array
-    function contains(address _lp) public view returns (bool) {
-        for (uint i = 0; i < lpAddresses.length; i++) {
-            if (lpAddresses[i] == _lp) {
-                return true; // Element found
-            }
-        }
-        return false; // Element not found
-    }
-
-    /**
-     * @notice Returns the nonce for a given address (used for permit functionality)
-     * @param owner Address for which the nonce is queried
-     * @return Current nonce of the owner
-     */
-    function nonces(address owner)
-        public
-        view
-        override(ERC20PermitUpgradeable, NoncesUpgradeable)
-        returns (uint256)
-    {
-        return super.nonces(owner);
-    }
 }
