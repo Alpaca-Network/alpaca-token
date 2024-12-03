@@ -19,7 +19,6 @@ contract Alpaca is
     UUPSUpgradeable 
 {
     // Define roles for granular access control
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant TAX_ADMIN_ROLE = keccak256("TAX_ADMIN_ROLE");
 
@@ -36,7 +35,7 @@ contract Alpaca is
     /// @custom:oz-upgrades-unsafe-allow constructor
     // Constructor disables initializers to ensure proper upgradeable deployment
     constructor() {
-        _disableInitializers();
+        // _disableInitializers();
     }
 
     /***********************************************/
@@ -62,10 +61,10 @@ contract Alpaca is
     /**
      * @notice Initialize the Alpaca token contract
      * @param defaultAdmin Address to be granted the DEFAULT_ADMIN_ROLE
-     * @param pauser Address to be granted the PAUSER_ROLE
+     * @param taxAdmin Address to be granted the PAUSER_ROLE
      * @param upgrader Address to be granted the UPGRADER_ROLE
      */
-    function initialize(address defaultAdmin, address pauser, address upgrader)
+    function initialize(address defaultAdmin, address taxAdmin, address upgrader)
         initializer public
     {
         // Initialize inherited modules
@@ -76,7 +75,7 @@ contract Alpaca is
 
         // Set up roles for access control
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
-        _grantRole(PAUSER_ROLE, pauser);
+        _grantRole(TAX_ADMIN_ROLE, taxAdmin);
         _grantRole(UPGRADER_ROLE, upgrader);
 
         // Mint initial supply of 1.2 billion PACA tokens to the deployer
