@@ -5,7 +5,6 @@ pragma solidity ^0.8.22;
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import {ERC20PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC20VotesUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -17,8 +16,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 contract Alpaca is 
     Initializable, 
     ERC20Upgradeable, 
-    ERC20BurnableUpgradeable, 
-    ERC20PausableUpgradeable, 
+    ERC20BurnableUpgradeable,     
     AccessControlUpgradeable, 
     ERC20PermitUpgradeable, 
     ERC20VotesUpgradeable, 
@@ -37,7 +35,7 @@ contract Alpaca is
     uint256 public buyFee;
     uint256 public sellFee;
 
-    mapping(address => bool) public lpAddress;
+    address[] public lpAddresses;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // Constructor disables initializers to ensure proper upgradeable deployment
@@ -49,7 +47,7 @@ contract Alpaca is
 	/********************* EVENT *******************/
 	/***********************************************/
 
-    event SetLPAddress(address indexed pair, bool indexed value);
+    event SetLPAddress(address indexed pair);
 
     event TreasuryWalletUpdated(
         address indexed newWallet,
@@ -77,7 +75,6 @@ contract Alpaca is
         // Initialize inherited modules
         __ERC20_init("Alpaca", "PACA");
         __ERC20Burnable_init();
-        __ERC20Pausable_init();
         __AccessControl_init();
         __ERC20Permit_init("Alpaca");
         __ERC20Votes_init();
@@ -122,7 +119,7 @@ contract Alpaca is
         emit TreasuryWalletUpdated(newTreasury, treasury);
     }
 
-    function setLPAddress(address pair, bool value) 
+    function setLPAddress(address pair) 
         public 
         onlyRole(TAX_ADMIN_ROLE)
     {
@@ -131,26 +128,9 @@ contract Alpaca is
             "The pair cannot be zero address"
         );
 
-        lpAddress[pair] = value;
-        emit SetLPAddress(pair, value);
+        lpAddresses.push(pair);
+        emit SetLPAddress(pair);
 
-    }
-
-
-    /**
-     * @notice Pause all token transfers
-     * @dev Restricted to accounts with the PAUSER_ROLE
-     */
-    function pause() public onlyRole(PAUSER_ROLE) {
-        _pause();
-    }
-
-    /**
-     * @notice Unpause all token transfers
-     * @dev Restricted to accounts with the PAUSER_ROLE
-     */
-    function unpause() public onlyRole(PAUSER_ROLE) {
-        _unpause();
     }
 
 
@@ -177,16 +157,16 @@ contract Alpaca is
         address from,
         address to,
         uint256 amount
-    ) internal override(ERC20Upgradeable, ERC20PausableUpgradeable, ERC20VotesUpgradeable){
+    ) internal override(ERC20Upgradeable, ERC20VotesUpgradeable){
 
         uint256 fees = 0;
         // only take fees on buys/sells, do not take on wallet transfers
         if (taxEnabled && amount > 0) {
-            if(lpAddress[from]) {
+            if(contains(from)) {
                 if(buyFee > 0) {
                     fees = (amount * buyFee) / 10000;
                 }
-            } else if(lpAddress[to]) {
+            } else if(contains(to)) {
                 if(sellFee > 0) {
                     fees = (amount * sellFee) / 10000;
                 }
@@ -198,6 +178,16 @@ contract Alpaca is
             amount -= fees;
         }
         super._update(from, to, amount);
+    }
+
+    // Function to check if a address exists in the LP array
+    function contains(address _lp) public view returns (bool) {
+        for (uint i = 0; i < lpAddresses.length; i++) {
+            if (lpAddresses[i] == _lp) {
+                return true; // Element found
+            }
+        }
+        return false; // Element not found
     }
 
     /**
