@@ -27,12 +27,46 @@ contract Alpaca is
     // Define roles for granular access control
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 public constant TAX_ADMIN_ROLE = keccak256("TAX_ADMIN_ROLE");
+
+    address public treasury;
+    bool public taxEnabled = true;
+
+    uint256 public maxFee = 2000; // 20%
+
+    uint256 public buyFee;
+    uint256 public sellFee;
+
+
+    // Store addresses that a market maker pairs
+
+    mapping(address => bool) public lpAddress;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // Constructor disables initializers to ensure proper upgradeable deployment
     constructor() {
         _disableInitializers();
     }
+
+    /***********************************************/
+	/********************* EVENT *******************/
+	/***********************************************/
+
+    event SetLPAddress(address indexed pair, bool indexed value);
+
+    event TreasuryWalletUpdated(
+        address indexed newWallet,
+        address indexed oldWallet
+    );
+
+    event TaxEnabled(
+        bool enabled
+    );
+
+    event UpdatedTradeFee(
+        uint256 buyFee,
+        uint256 sellFee
+    );
 
     /**
      * @notice Initialize the Alpaca token contract
@@ -61,6 +95,51 @@ contract Alpaca is
         _mint(msg.sender, 1200000000 * 10 ** decimals());
     }
 
+
+    /*****************************************************************/
+	/******************  EXTERNAL FUNCTIONS  *************************/
+	/*****************************************************************/
+   
+    // only use to disable tax if absolutely necessary (emergency use only)
+    function updateTaxEnabled(bool enabled) external onlyRole(TAX_ADMIN_ROLE) {
+        taxEnabled = enabled;
+        emit TaxEnabled(taxEnabled);
+    }
+
+    function updateFees(
+        uint256 _buyFee,
+        uint256 _sellFee
+    ) external onlyRole(TAX_ADMIN_ROLE) {
+        buyFee = _buyFee;
+        sellFee = _sellFee;
+        
+        require(_buyFee <= maxFee, "Buy fees must be <= 20%.");
+        require(_sellFee <= maxFee, "Sell fees must be <= 20%.");
+
+        emit UpdatedTradeFee(buyFee, sellFee);
+    }
+
+    function updateTreasuryWallet(address newTreasury) external onlyRole(TAX_ADMIN_ROLE) {
+        require(newTreasury != address(0), "Invalid wallet addresss");
+        treasury = newTreasury;
+        emit TreasuryWalletUpdated(newTreasury, treasury);
+    }
+
+    function setLPAddress(address pair, bool value) 
+        public 
+        onlyRole(TAX_ADMIN_ROLE)
+    {
+        require(
+            pair != address(0x0),
+            "The pair cannot be zero address"
+        );
+
+        lpAddress[pair] = value;
+        emit SetLPAddress(pair, value);
+
+    }
+
+
     /**
      * @notice Pause all token transfers
      * @dev Restricted to accounts with the PAUSER_ROLE
@@ -77,22 +156,6 @@ contract Alpaca is
         _unpause();
     }
 
-    /**
-     * @notice Returns the current timestamp as the "clock" value
-     * @dev Used for compatibility with certain standards or protocols
-     * @return Current block timestamp
-     */
-    function clock() public view override returns (uint48) {
-        return uint48(block.timestamp);
-    }
-
-    /**
-     * @notice Defines the clock mode as "timestamp"
-     * @return A string representing the clock mode
-     */
-    function CLOCK_MODE() public pure override returns (string memory) {
-        return "mode=timestamp";
-    }
 
     /**
      * @notice Authorizes upgrades to the contract
@@ -110,13 +173,34 @@ contract Alpaca is
      * @notice Updates state during token transfers
      * @param from Sender address
      * @param to Recipient address
-     * @param value Transfer amount
+     * @param amount Transfer amount
      */
-    function _update(address from, address to, uint256 value)
-        internal
-        override(ERC20Upgradeable, ERC20PausableUpgradeable, ERC20VotesUpgradeable)
-    {
-        super._update(from, to, value);
+
+    function _update(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20Upgradeable, ERC20PausableUpgradeable, ERC20VotesUpgradeable){
+
+        uint256 fees = 0;
+        // only take fees on buys/sells, do not take on wallet transfers
+        if (taxEnabled && amount > 0) {
+            if(lpAddress[from]) {
+                if(buyFee > 0) {
+                    fees = (amount * buyFee) / 10000;
+                }
+            } else if(lpAddress[to]) {
+                if(sellFee > 0) {
+                    fees = (amount * sellFee) / 10000;
+                }
+            }
+        }
+
+        if(fees > 0) {
+            super._update(from, treasury, fees);
+            amount -= fees;
+        }
+        super._update(from, to, amount);
     }
 
     /**
