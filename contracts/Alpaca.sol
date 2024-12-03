@@ -37,9 +37,6 @@ contract Alpaca is
     uint256 public buyFee;
     uint256 public sellFee;
 
-
-    // Store addresses that a market maker pairs
-
     mapping(address => bool) public lpAddress;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
