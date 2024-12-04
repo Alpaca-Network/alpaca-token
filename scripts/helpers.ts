@@ -1,4 +1,4 @@
-import {ethers} from 'hardhat';
+import {ethers, upgrades} from 'hardhat';
 import {expect} from 'chai';
 
 export const getAddr = async (ethers: any) => {
@@ -21,7 +21,9 @@ export const getAddr = async (ethers: any) => {
 };
 
 
-export const deployNew = async (contractName: string, params: any[] = []) => {
-    const C = await ethers.getContractFactory(contractName)
-    return await C.deploy(...params)
-}
+export const deployNew = async (contractName: string, params: any[] = [], initializer: string = 'initialize') => {
+    const C = await ethers.getContractFactory(contractName);
+    // Deploy as a proxy with initialization parameters
+    return await upgrades.deployProxy(C, params, { initializer });
+};
+
