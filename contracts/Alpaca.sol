@@ -19,14 +19,13 @@ contract Alpaca is
     UUPSUpgradeable 
 {
     // Define roles for granular access control
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant TAX_ADMIN_ROLE = keccak256("TAX_ADMIN_ROLE");
 
     address public treasury;
-    bool public taxEnabled = true;
+    bool public taxEnabled;
 
-    uint256 public maxFee = 2000; // 20%
+    uint256 public maxFee;
 
     uint256 public buyFee;
     uint256 public sellFee;
@@ -62,10 +61,9 @@ contract Alpaca is
     /**
      * @notice Initialize the Alpaca token contract
      * @param defaultAdmin Address to be granted the DEFAULT_ADMIN_ROLE
-     * @param pauser Address to be granted the PAUSER_ROLE
      * @param upgrader Address to be granted the UPGRADER_ROLE
      */
-    function initialize(address defaultAdmin, address pauser, address upgrader)
+    function initialize(address defaultAdmin, address taxAdmin, address upgrader)
         initializer public
     {
         // Initialize inherited modules
@@ -76,8 +74,12 @@ contract Alpaca is
 
         // Set up roles for access control
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
-        _grantRole(PAUSER_ROLE, pauser);
+        _grantRole(TAX_ADMIN_ROLE, taxAdmin);
         _grantRole(UPGRADER_ROLE, upgrader);
+
+        // Initialize state variables
+        taxEnabled = true;
+        maxFee = 2000; // 20%
 
         // Mint initial supply of 1.2 billion PACA tokens to the deployer
         _mint(msg.sender, 1200000000 * 10 ** decimals());
@@ -109,8 +111,9 @@ contract Alpaca is
 
     function updateTreasuryWallet(address newTreasury) external onlyRole(TAX_ADMIN_ROLE) {
         require(newTreasury != address(0), "Invalid wallet addresss");
+        address oldTreasury = treasury;
         treasury = newTreasury;
-        emit TreasuryWalletUpdated(newTreasury, treasury);
+        emit TreasuryWalletUpdated(newTreasury, oldTreasury);
     }
 
     function setLPAddress(address pair, bool value) 
