@@ -81,8 +81,8 @@ contract Alpaca is
         taxEnabled = true;
         maxFee = 2000; // 20%
 
-        // Mint initial supply of 1.2 billion PACA tokens to the deployer
-        _mint(msg.sender, 1200000000 * 10 ** decimals());
+        // Mint initial supply of 1 billion PACA tokens to the deployer
+        _mint(msg.sender, 1000000000 * 10 ** decimals());
     }
 
 
