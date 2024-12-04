@@ -25,7 +25,7 @@ contract Alpaca is
     address public treasury;
     bool public taxEnabled;
 
-    uint256 public maxFee;
+    uint256 public constant MAX_FEE = 2000;
 
     uint256 public buyFee;
     uint256 public sellFee;
@@ -79,10 +79,9 @@ contract Alpaca is
 
         // Initialize state variables
         taxEnabled = true;
-        maxFee = 2000; // 20%
 
         // Mint initial supply of 1 billion PACA tokens to the deployer
-        _mint(msg.sender, 1000000000 * 10 ** decimals());
+        _mint(msg.sender, 1_000_000_000 * 10 ** decimals());
     }
 
 
@@ -103,8 +102,8 @@ contract Alpaca is
         buyFee = _buyFee;
         sellFee = _sellFee;
         
-        require(_buyFee <= maxFee, "Buy fees must be <= 20%.");
-        require(_sellFee <= maxFee, "Sell fees must be <= 20%.");
+        require(_buyFee <= MAX_FEE, "Buy fees must be <= 20%.");
+        require(_sellFee <= MAX_FEE, "Sell fees must be <= 20%.");
 
         emit UpdatedTradeFee(buyFee, sellFee);
     }
@@ -155,8 +154,9 @@ contract Alpaca is
         address to,
         uint256 amount
     ) internal override(ERC20Upgradeable){
-
+        
         uint256 fees = 0;
+        // tax logic for LP transfers.
         // only take fees on buys/sells, do not take on wallet transfers
         if (taxEnabled && amount > 0) {
             if(lpAddress[from]) {
