@@ -30,7 +30,7 @@ contract Alpaca is
     uint256 public buyFee;
     uint256 public sellFee;
 
-    mapping(address => bool) public lpAddress;
+    mapping(address => bool) public dexes;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // Constructor disables initializers to ensure proper upgradeable deployment
@@ -42,7 +42,13 @@ contract Alpaca is
 	/********************* EVENT *******************/
 	/***********************************************/
 
-    event SetLPAddress(address indexed pair, bool value);
+    event FeeCharged(
+        address indexed from,
+        address indexed to,
+        uint256 amount
+    );
+
+    event DexAdded(address indexed pair, bool value);
 
     event TreasuryWalletUpdated(
         address indexed newWallet,
@@ -80,6 +86,9 @@ contract Alpaca is
         // Initialize state variables
         taxEnabled = true;
 
+        // set treasury wallet
+        treasury = defaultAdmin;
+
         // Mint initial supply of 1 billion PACA tokens to the deployer
         _mint(msg.sender, 1_200_000_000 * 10 ** decimals());
     }
@@ -115,7 +124,7 @@ contract Alpaca is
         emit TreasuryWalletUpdated(newTreasury, oldTreasury);
     }
 
-    function setLPAddress(address pair, bool value) 
+    function addDex(address pair, bool value) 
         public 
         onlyRole(TAX_ADMIN_ROLE)
     {
@@ -124,8 +133,8 @@ contract Alpaca is
             "The pair cannot be zero address"
         );
 
-        lpAddress[pair] = value;
-        emit SetLPAddress(pair, value);
+        dexes[pair] = value;
+        emit DexAdded(pair, value);
 
     }
 
@@ -159,11 +168,11 @@ contract Alpaca is
         // tax logic for LP transfers.
         // only take fees on buys/sells, do not take on wallet transfers
         if (taxEnabled && amount > 0) {
-            if(lpAddress[from]) {
+            if(dexes[from]) {
                 if(buyFee > 0) {
                     fees = (amount * buyFee) / 10000;
                 }
-            } else if(lpAddress[to]) {
+            } else if(dexes[to]) {
                 if(sellFee > 0) {
                     fees = (amount * sellFee) / 10000;
                 }
@@ -173,6 +182,7 @@ contract Alpaca is
         if(fees > 0) {
             super._update(from, treasury, fees);
             amount -= fees;
+            emit FeeCharged(from, treasury, fees);
         }
         super._update(from, to, amount);
     }
