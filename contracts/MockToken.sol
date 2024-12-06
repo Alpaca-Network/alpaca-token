@@ -9,7 +9,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {NoncesUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/NoncesUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract MockToken is 
+contract Mock is 
     Initializable, 
     ERC20Upgradeable, 
     ERC20BurnableUpgradeable,     
@@ -62,7 +62,7 @@ contract MockToken is
     );
 
     /**
-     * @notice Initialize the MockToken token contract
+     * @notice Initialize the Mock token contract
      * @param defaultAdmin Address to be granted the DEFAULT_ADMIN_ROLE
      * @param upgrader Address to be granted the UPGRADER_ROLE
      */
@@ -70,7 +70,7 @@ contract MockToken is
         initializer public
     {
         // Initialize inherited modules
-        __ERC20_init("MockToken", "MOCK");
+        __ERC20_init("Mock", "MCK");
         __ERC20Burnable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
@@ -91,10 +91,10 @@ contract MockToken is
         dexes[0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD] = true;
 
         // Set initial fees
-        buyFee = 1000; // 10%
-        sellFee = 1000; // 10%
+        buyFee = 500; // 5%
+        sellFee = 500; // 5%
 
-        // Mint initial supply of 1 billion MOCK tokens to the deployer
+        // Mint initial supply of 1 billion MCK tokens to the deployer
         _mint(msg.sender, 1_200_000_000 * 10 ** decimals());
     }
 

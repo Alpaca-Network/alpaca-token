@@ -4,7 +4,7 @@ import { getImplementationAddress } from "@openzeppelin/upgrades-core"; // Impor
 async function main() {
     console.log("Deploying as implementation on Tenderly.");
 
-    const MockToken = await ethers.getContractFactory("MockToken");
+    const MockToken = await ethers.getContractFactory("Mock");
 
     const defaultAdmin = "0x6352aFD6a02f683833D19e12F21d174ca58BFb94"; // admin address
     const taxAdmin = "0x6352aFD6a02f683833D19e12F21d174ca58BFb94"; // tax admin address
