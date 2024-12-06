@@ -43,8 +43,7 @@ contract Alpaca is
     /***********************************************/
 
     event FeeCharged(
-        address indexed from,
-        address indexed to,
+        address indexed treasury,
         uint256 amount
     );
 
@@ -165,7 +164,7 @@ contract Alpaca is
         if(fees > 0) {
             super._update(from, treasury, fees);
             amount -= fees;
-            emit FeeCharged(from, treasury, fees);
+            emit FeeCharged(treasury, fees);
         }
         super._update(from, to, amount);
     }

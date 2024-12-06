@@ -71,11 +71,15 @@ describe("Alpaca local test", async () => {
             await PacaToken.connect(taxAdmin).addDex(user1.address, true);
 
             // Simulate a transfer (buy scenario)
-            await PacaToken.connect(owner).transfer(user1.address, 20000);
+            await expect(PacaToken.connect(owner).transfer(user1.address, 20000))
+                .to.emit(PacaToken, "FeeCharged")
+                .withArgs(PacaToken.treasury(), 1000);
             expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(1000);
 
             // Simulate another transfer (sell scenario)
-            await PacaToken.connect(user1).transfer(user3.address, 10000);
+            await expect(PacaToken.connect(user1).transfer(user3.address, 10000))
+                .to.emit(PacaToken, "FeeCharged")
+                .withArgs(PacaToken.treasury(), 1000);
             expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(2000);
         });
     });
