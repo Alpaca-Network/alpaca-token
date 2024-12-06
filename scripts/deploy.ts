@@ -6,9 +6,9 @@ async function main() {
 
     const Test = await ethers.getContractFactory("Test");
 
-    const defaultAdmin = "0x6352aFD6a02f683833D19e12F21d174ca58BFb94"; // admin address
-    const taxAdmin = "0x6352aFD6a02f683833D19e12F21d174ca58BFb94"; // tax admin address
-    const upgrader = "0x6352aFD6a02f683833D19e12F21d174ca58BFb94"; // upgrader address
+    const defaultAdmin = "0xSetAddr"; // admin address
+    const taxAdmin = "0xSetAddr"; // tax admin address
+    const upgrader = "0xSetAddr"; // upgrader address
 
     let proxyContract = await upgrades.deployProxy(Test, [defaultAdmin, taxAdmin, upgrader], {
         initializer: "initialize",
