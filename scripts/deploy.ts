@@ -1,24 +1,26 @@
 import { ethers, upgrades } from "hardhat";
+import { getImplementationAddress } from "@openzeppelin/upgrades-core"; // Import the helper function
 
 async function main() {
-    const [deployer] = await ethers.getSigners();
+    console.log("Deploying as implementation on Tenderly.");
 
-    console.log("Deploying contracts with the account:", deployer.address);
+    const Test = await ethers.getContractFactory("Test");
 
-    const weiAmount = await ethers.provider.getBalance(deployer.address);
+    const defaultAdmin = "0x6352aFD6a02f683833D19e12F21d174ca58BFb94"; // admin address
+    const taxAdmin = "0x6352aFD6a02f683833D19e12F21d174ca58BFb94"; // tax admin address
+    const upgrader = "0x6352aFD6a02f683833D19e12F21d174ca58BFb94"; // upgrader address
 
-    console.log("Account balance:", ethers.formatEther(weiAmount));
-
-    // Get the contract factory
-    const Token = await ethers.getContractFactory("Alpaca");
-
-    // Deploy the proxy with initialization parameters
-    const token = await upgrades.deployProxy(Token, [deployer.address, deployer.address, deployer.address], {
-        initializer: "initialize", // This matches the initialize function in the contract
+    let proxyContract = await upgrades.deployProxy(Test, [defaultAdmin, taxAdmin, upgrader], {
+        initializer: "initialize",
     });
+    proxyContract = await proxyContract.waitForDeployment();
 
-    // Log the proxy contract address
-    console.log("Token proxy address:", await token.getAddress());
+    const proxyAddress = await proxyContract.getAddress();
+    console.log("Test proxy deployed to:", proxyAddress);
+
+    // Retrieve the implementation address
+    const implementationAddress = await getImplementationAddress(ethers.provider, proxyAddress);
+    console.log("Test impl deployed to:", implementationAddress);
 }
 
 main().catch((error) => {
