@@ -1,7 +1,7 @@
 import { ethers, upgrades } from "hardhat";
 import { expect } from "chai";
 
-describe("Alpaca local test", async () => {
+describe("MockToken local test", async () => {
     let owner: any, taxAdmin: any, upgrader: any, user1: any, user2: any, user3: any, user4: any, user5: any;
     let PacaToken: any;
 
@@ -9,10 +9,10 @@ describe("Alpaca local test", async () => {
         // Get signers
         [owner, taxAdmin, upgrader, user1, user2, user3, user4, user5] = await ethers.getSigners();
 
-        // Deploy Alpaca token as a proxy with initialization parameters
-        const Alpaca = await ethers.getContractFactory("Alpaca");
+        // Deploy MockToken as a proxy with initialization parameters
+        const MockToken = await ethers.getContractFactory("MockToken");
         PacaToken = await upgrades.deployProxy(
-            Alpaca,
+            MockToken,
             [owner.address, taxAdmin.address, upgrader.address],
             { initializer: "initialize" }
         );

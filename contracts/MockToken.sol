@@ -9,9 +9,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {NoncesUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/NoncesUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-/// @custom:security-contact vaughn@alpacanetwork.ai
-/// @custom:security-contact aladeen@alpacanetwork.ai
-contract Alpaca is 
+contract MockToken is 
     Initializable, 
     ERC20Upgradeable, 
     ERC20BurnableUpgradeable,     
@@ -65,7 +63,7 @@ contract Alpaca is
     );
 
     /**
-     * @notice Initialize the Alpaca token contract
+     * @notice Initialize the MockToken token contract
      * @param defaultAdmin Address to be granted the DEFAULT_ADMIN_ROLE
      * @param upgrader Address to be granted the UPGRADER_ROLE
      */
@@ -73,7 +71,7 @@ contract Alpaca is
         initializer public
     {
         // Initialize inherited modules
-        __ERC20_init("Alpaca", "PACA");
+        __ERC20_init("MockToken", "MOCK");
         __ERC20Burnable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
@@ -93,7 +91,7 @@ contract Alpaca is
         // Support uniswap v3 by default
         dexes[0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD] = true;
 
-        // Mint initial supply of 1 billion PACA tokens to the deployer
+        // Mint initial supply of 1 billion MOCK tokens to the deployer
         _mint(msg.sender, 1_200_000_000 * 10 ** decimals());
     }
 
