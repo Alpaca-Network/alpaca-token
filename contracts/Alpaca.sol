@@ -93,8 +93,8 @@ contract Alpaca is
         dexes[0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD] = true;
 
         // Set initial fees
-        buyFee = 1000; // 10%
-        sellFee = 1000; // 10%
+        buyFee = TODO; // 10%
+        sellFee = TODO; // 10%
 
         // Mint initial supply of 1 billion PACA tokens to the deployer
         _mint(msg.sender, 1_200_000_000 * 10 ** decimals());
