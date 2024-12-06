@@ -105,6 +105,7 @@ contract Alpaca is
     /*****************************************************************/
    
     function updateTaxEnabled(bool enabled) external onlyRole(TAX_ADMIN_ROLE) {
+        require(taxEnabled != enabled,"Meaningless setting");
         taxEnabled = enabled;
         emit TaxEnabled(taxEnabled);
     }
