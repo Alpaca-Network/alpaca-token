@@ -56,26 +56,30 @@ describe("Alpaca local test", async () => {
             expect(await PacaToken.treasury()).to.equal(user5.address);
         });
 
-        it("function test: setLPAddress", async function () {
-            await expect(PacaToken.connect(taxAdmin).setLPAddress(user5.address, true))
-                .to.emit(PacaToken, "SetLPAddress")
+        it("function test: addDex", async function () {
+            await expect(PacaToken.connect(taxAdmin).addDex(user5.address, true))
+                .to.emit(PacaToken, "DexAdded")
                 .withArgs(user5.address, true);
 
-            expect(await PacaToken.lpAddress(user5.address)).to.equal(true);
+            expect(await PacaToken.dexes(user5.address)).to.equal(true);
         });
 
         it("Charging the Trading fee", async function () {
             await PacaToken.connect(taxAdmin).updateTaxEnabled(true);
             await PacaToken.connect(taxAdmin).updateFees(1000, 500); // 10%/5% buy/sell tax fee
             await PacaToken.connect(taxAdmin).updateTreasuryWallet(user5.address);
-            await PacaToken.connect(taxAdmin).setLPAddress(user1.address, true);
+            await PacaToken.connect(taxAdmin).addDex(user1.address, true);
 
             // Simulate a transfer (buy scenario)
-            await PacaToken.connect(owner).transfer(user1.address, 20000);
+            await expect(PacaToken.connect(owner).transfer(user1.address, 20000))
+                .to.emit(PacaToken, "FeeCharged")
+                .withArgs(PacaToken.treasury(), 1000);
             expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(1000);
 
             // Simulate another transfer (sell scenario)
-            await PacaToken.connect(user1).transfer(user3.address, 10000);
+            await expect(PacaToken.connect(user1).transfer(user3.address, 10000))
+                .to.emit(PacaToken, "FeeCharged")
+                .withArgs(PacaToken.treasury(), 1000);
             expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(2000);
         });
     });

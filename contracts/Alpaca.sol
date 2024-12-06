@@ -30,7 +30,7 @@ contract Alpaca is
     uint256 public buyFee;
     uint256 public sellFee;
 
-    mapping(address => bool) public lpAddress;
+    mapping(address => bool) public dexes;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     // Constructor disables initializers to ensure proper upgradeable deployment
@@ -39,10 +39,15 @@ contract Alpaca is
     }
 
     /***********************************************/
-	/********************* EVENT *******************/
-	/***********************************************/
+    /********************* EVENT *******************/
+    /***********************************************/
 
-    event SetLPAddress(address indexed pair, bool value);
+    event FeeCharged(
+        address indexed treasury,
+        uint256 amount
+    );
+
+    event DexAdded(address indexed pair, bool value);
 
     event TreasuryWalletUpdated(
         address indexed newWallet,
@@ -80,55 +85,59 @@ contract Alpaca is
         // Initialize state variables
         taxEnabled = true;
 
+        // Set treasury wallet
+        require(defaultAdmin != address(0), "Default admin cannot be zero address");
+        treasury = defaultAdmin;
+
+        // Support uniswap v3 by default
+        dexes[0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD] = true;
+
+        // Set initial fees
+        buyFee = TODO; // 10%
+        sellFee = TODO; // 10%
+
         // Mint initial supply of 1 billion PACA tokens to the deployer
         _mint(msg.sender, 1_200_000_000 * 10 ** decimals());
     }
 
-
     /*****************************************************************/
-	/******************  EXTERNAL FUNCTIONS  *************************/
-	/*****************************************************************/
+    /******************  EXTERNAL FUNCTIONS  *************************/
+    /*****************************************************************/
    
-    // only use to disable tax if absolutely necessary (emergency use only)
     function updateTaxEnabled(bool enabled) external onlyRole(TAX_ADMIN_ROLE) {
         taxEnabled = enabled;
         emit TaxEnabled(taxEnabled);
     }
 
     function updateFees(
-        uint256 _buyFee,
-        uint256 _sellFee
+        uint256 newBuyFee,
+        uint256 newSellFee
     ) external onlyRole(TAX_ADMIN_ROLE) {
-        buyFee = _buyFee;
-        sellFee = _sellFee;
-        
-        require(_buyFee <= MAX_FEE, "Buy fees must be <= 20%.");
-        require(_sellFee <= MAX_FEE, "Sell fees must be <= 20%.");
+        require(newBuyFee <= MAX_FEE, "Buy fees must be <= 20%.");
+        require(newSellFee <= MAX_FEE, "Sell fees must be <= 20%.");
+
+        buyFee = newBuyFee;
+        sellFee = newSellFee;
 
         emit UpdatedTradeFee(buyFee, sellFee);
     }
 
     function updateTreasuryWallet(address newTreasury) external onlyRole(TAX_ADMIN_ROLE) {
-        require(newTreasury != address(0), "Invalid wallet addresss");
+        require(newTreasury != address(0), "Treasury address cannot be zero");
         address oldTreasury = treasury;
         treasury = newTreasury;
         emit TreasuryWalletUpdated(newTreasury, oldTreasury);
     }
 
-    function setLPAddress(address pair, bool value) 
+    function addDex(address pair, bool value) 
         public 
         onlyRole(TAX_ADMIN_ROLE)
     {
-        require(
-            pair != address(0x0),
-            "The pair cannot be zero address"
-        );
+        require(pair != address(0), "The pair cannot be zero address");
 
-        lpAddress[pair] = value;
-        emit SetLPAddress(pair, value);
-
+        dexes[pair] = value;
+        emit DexAdded(pair, value);
     }
-
 
     /**
      * @notice Authorizes upgrades to the contract
@@ -148,33 +157,49 @@ contract Alpaca is
      * @param to Recipient address
      * @param amount Transfer amount
      */
-
     function _update(
         address from,
         address to,
         uint256 amount
     ) internal override(ERC20Upgradeable){
         
-        uint256 fees = 0;
-        // tax logic for LP transfers.
-        // only take fees on buys/sells, do not take on wallet transfers
-        if (taxEnabled && amount > 0) {
-            if(lpAddress[from]) {
-                if(buyFee > 0) {
-                    fees = (amount * buyFee) / 10000;
-                }
-            } else if(lpAddress[to]) {
-                if(sellFee > 0) {
-                    fees = (amount * sellFee) / 10000;
-                }
-            }
-        }
+        uint256 fees = _calculateFees(from, to, amount);
 
         if(fees > 0) {
             super._update(from, treasury, fees);
             amount -= fees;
+            emit FeeCharged(treasury, fees);
         }
         super._update(from, to, amount);
     }
 
+    /*****************************************************************/
+    /********************* INTERNAL FUNCTIONS ************************/
+    /*****************************************************************/
+
+    /**
+     * @notice Calculate fees based on the transaction type (buy/sell).
+     * @param from Sender address
+     * @param to Recipient address
+     * @param amount Transfer amount
+     * @return fees Amount of fees to deduct
+     */
+    function _calculateFees(
+        address from,
+        address to,
+        uint256 amount
+    ) internal view returns (uint256) {
+        if (!taxEnabled || amount == 0) {
+            return 0;
+        }
+
+        if (dexes[from]) {
+            // Buy transaction
+            return (amount * buyFee) / 10000;
+        } else if (dexes[to]) {
+            // Sell transaction
+            return (amount * sellFee) / 10000;
+        }
+        return 0;
+    }
 }
