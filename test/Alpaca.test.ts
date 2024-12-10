@@ -4,6 +4,8 @@ import { expect } from "chai";
 describe("Alpaca local test", async () => {
     let owner: any, taxAdmin: any, upgrader: any, user1: any, user2: any, user3: any, user4: any, user5: any;
     let PacaToken: any;
+    let PacaToken_ZeroUpgrader: any;
+    const zeroAddress = "0x0000000000000000000000000000000000000000";
 
     before(async () => {
         // Get signers
@@ -14,6 +16,11 @@ describe("Alpaca local test", async () => {
         PacaToken = await upgrades.deployProxy(
             Alpaca,
             [owner.address, taxAdmin.address, upgrader.address],
+            { initializer: "initialize" }
+        );
+        PacaToken_ZeroUpgrader = await upgrades.deployProxy(
+            Alpaca,
+            [owner.address, taxAdmin.address, zeroAddress],
             { initializer: "initialize" }
         );
 
@@ -78,5 +85,25 @@ describe("Alpaca local test", async () => {
             await PacaToken.connect(user1).transfer(user3.address, 10000);
             expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(2000);
         });
+        it("Working all the functionalities for Upgrader being a dead wallet", async function () {
+            const UPGRADER_ROLE = await PacaToken_ZeroUpgrader.UPGRADER_ROLE();
+            const isZero = await PacaToken_ZeroUpgrader.hasRole(UPGRADER_ROLE, zeroAddress);
+            expect(isZero).to.equal(true)
+
+            await PacaToken_ZeroUpgrader.connect(taxAdmin).updateTaxEnabled(true);
+            await PacaToken_ZeroUpgrader.connect(taxAdmin).updateFees(1000, 500); // 10%/5% buy/sell tax fee
+            await PacaToken_ZeroUpgrader.connect(taxAdmin).updateTreasuryWallet(user5.address);
+            await PacaToken_ZeroUpgrader.connect(taxAdmin).setLPAddress(user1.address, true);
+
+            // Simulate a transfer (buy scenario)
+            await PacaToken_ZeroUpgrader.connect(owner).transfer(user1.address, 20000);
+            expect(await PacaToken_ZeroUpgrader.balanceOf(PacaToken_ZeroUpgrader.treasury())).to.equal(1000);
+
+            // Simulate another transfer (sell scenario)
+            await PacaToken_ZeroUpgrader.connect(user1).transfer(user3.address, 10000);
+            expect(await PacaToken_ZeroUpgrader.balanceOf(PacaToken_ZeroUpgrader.treasury())).to.equal(2000);
+        });
+        
+
     });
 });
