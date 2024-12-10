@@ -11,7 +11,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 
 /// @custom:security-contact vaughn@alpacanetwork.ai
 /// @custom:security-contact aladeen@alpacanetwork.ai
-contract Alpaca is 
+contract PacaAI is 
     Initializable, 
     ERC20Upgradeable, 
     ERC20BurnableUpgradeable,     
@@ -68,11 +68,11 @@ contract Alpaca is
      * @param defaultAdmin Address to be granted the DEFAULT_ADMIN_ROLE
      * @param upgrader Address to be granted the UPGRADER_ROLE
      */
-    function initialize(address defaultAdmin, address taxAdmin, address upgrader)
+    function initialize(address defaultAdmin, address taxAdmin, address upgrader, address treasuryWallet)
         initializer public
     {
         // Initialize inherited modules
-        __ERC20_init("Alpaca", "PACA");
+        __ERC20_init("PACA AI", "PACA");
         __ERC20Burnable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
@@ -87,14 +87,14 @@ contract Alpaca is
 
         // Set treasury wallet
         require(defaultAdmin != address(0), "Default admin cannot be zero address");
-        treasury = defaultAdmin;
+        treasury = treasuryWallet;
 
         // Support uniswap v3 by default
         dexes[0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD] = true;
 
         // Set initial fees
-        buyFee = 500; // 5%
-        sellFee = 500; // 5%
+        buyFee = 0; // 0%
+        sellFee = 0; // 0%
 
         // Mint initial supply of 1 billion PACA tokens to the deployer
         _mint(msg.sender, 1_200_000_000 * 10 ** decimals());

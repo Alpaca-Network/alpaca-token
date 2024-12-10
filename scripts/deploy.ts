@@ -4,23 +4,24 @@ import { getImplementationAddress } from "@openzeppelin/upgrades-core"; // Impor
 async function main() {
     console.log("Deploying as implementation on Tenderly.");
 
-    const Test = await ethers.getContractFactory("Test");
+    const PacaAI = await ethers.getContractFactory("PacaAI");
 
-    const defaultAdmin = "0xSetAddr"; // admin address
-    const taxAdmin = "0xSetAddr"; // tax admin address
-    const upgrader = "0xSetAddr"; // upgrader address
+    const defaultAdmin = "0xd733EBC081b302914f050b3ffBC1914b46B7783D"; // admin address
+    const taxAdmin = "0xd733EBC081b302914f050b3ffBC1914b46B7783D"; // tax admin address
+    const upgrader = "0xd733EBC081b302914f050b3ffBC1914b46B7783D"; // upgrader address
+    const treasuryWallet = "0x80F427afE376094122aDA221E49505f3fb3703F1"; // treasury address
 
-    let proxyContract = await upgrades.deployProxy(Test, [defaultAdmin, taxAdmin, upgrader], {
+    let proxyContract = await upgrades.deployProxy(PacaAI, [defaultAdmin, taxAdmin, upgrader, treasuryWallet], {
         initializer: "initialize",
     });
     proxyContract = await proxyContract.waitForDeployment();
 
     const proxyAddress = await proxyContract.getAddress();
-    console.log("Test proxy deployed to:", proxyAddress);
+    console.log("PacaAI proxy deployed to:", proxyAddress);
 
     // Retrieve the implementation address
     const implementationAddress = await getImplementationAddress(ethers.provider, proxyAddress);
-    console.log("Test impl deployed to:", implementationAddress);
+    console.log("PacaAI impl deployed to:", implementationAddress);
 }
 
 main().catch((error) => {

@@ -1,5 +1,4 @@
 import {ethers, upgrades} from 'hardhat';
-import {expect} from 'chai';
 
 export const getAddr = async (ethers: any) => {
   const [owner, proxyOwner, bob, alice, user3, user4, badUser1, badUser2, fakeContract, daoTreasury] = await ethers.getSigners();
