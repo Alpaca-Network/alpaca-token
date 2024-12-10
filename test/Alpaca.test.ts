@@ -88,11 +88,10 @@ describe("Alpaca local test", async () => {
             const UPGRADER_ROLE = await PacaToken.UPGRADER_ROLE();
             await PacaToken.connect(owner).grantRole(UPGRADER_ROLE, zeroAddress);
 
-            await PacaToken.connect(taxAdmin).updateTaxEnabled(true);
             await PacaToken.connect(taxAdmin).updateFees(1000, 500); // 10%/5% buy/sell tax fee
-            await PacaToken.connect(taxAdmin).updateTreasuryWallet(user5.address);
+            await PacaToken.connect(taxAdmin).updateTreasuryWallet(user4.address);
             await PacaToken.connect(taxAdmin).addDex(user1.address, true);
-
+            
             // Simulate a transfer (buy scenario)
             await expect(PacaToken.connect(owner).transfer(user1.address, 20000))
                 .to.emit(PacaToken, "FeeCharged")
@@ -104,7 +103,7 @@ describe("Alpaca local test", async () => {
                 .to.emit(PacaToken, "FeeCharged")
                 .withArgs(PacaToken.treasury(), 1000);
             expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(2000);
-            
+
             const isZero = await PacaToken.hasRole(UPGRADER_ROLE, zeroAddress);
             expect(isZero).to.equal(true)
         });
