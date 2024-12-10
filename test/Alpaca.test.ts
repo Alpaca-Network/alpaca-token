@@ -4,6 +4,7 @@ import { expect } from "chai";
 describe("Alpaca local test", async () => {
     let owner: any, taxAdmin: any, upgrader: any, treasuryWallet: any, user1: any, user2: any, user3: any, user4: any, user5: any;
     let PacaToken: any;
+    const zeroAddress = "0x0000000000000000000000000000000000000000";
 
     before(async () => {
         // Get signers
@@ -81,6 +82,54 @@ describe("Alpaca local test", async () => {
                 .to.emit(PacaToken, "FeeCharged")
                 .withArgs(PacaToken.treasury(), 1000);
             expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(2000);
+        });
+        it("Working all the functionalities for Upgrader being a dead wallet", async function () {
+
+            const UPGRADER_ROLE = await PacaToken.UPGRADER_ROLE();
+            await PacaToken.connect(owner).grantRole(UPGRADER_ROLE, zeroAddress);
+
+            await PacaToken.connect(taxAdmin).updateFees(1000, 500); // 10%/5% buy/sell tax fee
+            await PacaToken.connect(taxAdmin).updateTreasuryWallet(user4.address);
+            await PacaToken.connect(taxAdmin).addDex(user1.address, true);
+            
+            // Simulate a transfer (buy scenario)
+            await expect(PacaToken.connect(owner).transfer(user1.address, 20000))
+                .to.emit(PacaToken, "FeeCharged")
+                .withArgs(PacaToken.treasury(), 1000);
+            expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(1000);
+
+            // Simulate another transfer (sell scenario)
+            await expect(PacaToken.connect(user1).transfer(user3.address, 10000))
+                .to.emit(PacaToken, "FeeCharged")
+                .withArgs(PacaToken.treasury(), 1000);
+            expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(2000);
+
+            const isZero = await PacaToken.hasRole(UPGRADER_ROLE, zeroAddress);
+            expect(isZero).to.equal(true)
+        });
+        it("Working all the functionalities for Owner being a dead wallet", async function () {
+
+            const DEFAULT_ADMIN_ROLE = await PacaToken.DEFAULT_ADMIN_ROLE();
+            await PacaToken.connect(owner).grantRole(DEFAULT_ADMIN_ROLE, zeroAddress);
+
+            await PacaToken.connect(taxAdmin).updateFees(1000, 500); // 10%/5% buy/sell tax fee
+            await PacaToken.connect(taxAdmin).updateTreasuryWallet(user2.address);
+            await PacaToken.connect(taxAdmin).addDex(user1.address, true);
+            
+            // Simulate a transfer (buy scenario)
+            await expect(PacaToken.connect(owner).transfer(user1.address, 20000))
+                .to.emit(PacaToken, "FeeCharged")
+                .withArgs(PacaToken.treasury(), 1000);
+            expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(1000);
+
+            // Simulate another transfer (sell scenario)
+            await expect(PacaToken.connect(user1).transfer(user3.address, 10000))
+                .to.emit(PacaToken, "FeeCharged")
+                .withArgs(PacaToken.treasury(), 1000);
+            expect(await PacaToken.balanceOf(PacaToken.treasury())).to.equal(2000);
+
+            const isZero = await PacaToken.hasRole(DEFAULT_ADMIN_ROLE, zeroAddress);
+            expect(isZero).to.equal(true)
         });
     });
 });
