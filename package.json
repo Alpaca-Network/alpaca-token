@@ -33,6 +33,9 @@
     "@openzeppelin/contracts-upgradeable": "^5.1.0",
     "@openzeppelin/hardhat-upgrades": "^3.6.0",
     "@tenderly/hardhat-tenderly": "^2.5.1",
-    "dotenv": "^16.4.7"
+    "docgen": "^0.0.1",
+    "dotenv": "^16.4.7",
+    "doxygen": "^0.4.0",
+    "solidity-docgen": "^0.6.0-beta.36"
   }
 }

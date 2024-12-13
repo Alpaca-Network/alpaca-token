@@ -3,6 +3,7 @@ import '@openzeppelin/hardhat-upgrades';
 import "@nomicfoundation/hardhat-toolbox";
 import "solidity-coverage";
 import "dotenv/config";
+import "solidity-docgen";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -26,7 +27,8 @@ const config: HardhatUserConfig = {
   },
   sourcify: {
     enabled: true
-  }
+  },
+  docgen: {}
 };
 
 export default config;
